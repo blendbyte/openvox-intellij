@@ -1,0 +1,237 @@
+{
+  parserClass="net.blendbyte.openvox.parser.OpenVoxParser"
+  parserUtilClass="net.blendbyte.openvox.parser.OpenVoxParserUtil"
+
+  extends="net.blendbyte.openvox.psi.impl.OpenVoxPsiElement"
+  psiClassPrefix="OpenVox"
+  psiImplClassSuffix="Impl"
+  psiPackage="net.blendbyte.openvox.psi"
+  psiImplPackage="net.blendbyte.openvox.psi.impl"
+
+  elementTypeHolderClass="net.blendbyte.openvox.psi.OpenVoxTypes"
+  elementTypeClass="net.blendbyte.openvox.psi.OpenVoxElementType"
+  tokenTypeClass="net.blendbyte.openvox.psi.OpenVoxTokenType"
+
+  extends(".*_expr|.*_expression|.*_literal|dq_string|heredoc|type_reference|word_ref|epp_render")=expr
+
+  tokens=[
+    CASE='case' CLASS='class' DEFAULT='default' DEFINE='define'
+    IF='if' ELSIF='elsif' ELSE='else' UNLESS='unless'
+    INHERITS='inherits' NODE='node' AND='and' OR='or' IN='in'
+    UNDEF='undef' TRUE='true' FALSE='false'
+    FUNCTION='function' TYPE='type' ATTR='attr' PRIVATE='private'
+    PLAN='plan' APPLY='apply'
+
+    LBRACK='[' LISTSTART='[ ' RBRACK=']'
+    LBRACE='{' SELBRACE='? {' RBRACE='}'
+    LPAREN='(' WSLPAREN=' (' RPAREN=')'
+    EQUALS='=' APPENDS='+=' DELETES='-='
+    ISEQUAL='==' NOTEQUAL='!=' MATCH='=~' NOMATCH='!~'
+    GREATERTHAN='>' GREATEREQUAL='>=' LESSTHAN='<' LESSEQUAL='<='
+    FARROW='=>' PARROW='+>'
+    LSHIFT='<<' RSHIFT='>>'
+    LLCOLLECT='<<|' LCOLLECT='<|' RRCOLLECT='|>>' RCOLLECT='|>'
+    PLUS='+' MINUS='-' TIMES='*' DIV='/' MODULO='%'
+    NOT='!' DOT='.' PIPE='|' AT='@' ATAT='@@'
+    COLON=':' COMMA=',' SEMIC=';' QMARK='?' TILDE='~'
+    IN_EDGE='->' IN_EDGE_SUB='~>' OUT_EDGE='<-' OUT_EDGE_SUB='<~'
+
+    IDENTIFIER='regexp:[a-z][a-zA-Z0-9_]*'
+    CLASSREF='regexp:[A-Z][a-zA-Z0-9_]*'
+    BARE_WORD='regexp:[a-z_][a-zA-Z0-9_-]*'
+    VARIABLE='regexp:\$[a-zA-Z0-9_:]+'
+    NUMBER='regexp:[0-9]+'
+    REGEX='regexp:/[^/]*/'
+    SQ_STRING="regexp:'[^']*'"
+
+    DQ_START='"' DQ_END='"' DQ_TEXT='dq text' DQ_ESCAPE='dq escape'
+    INTERP_START='${' INTERP_END='}'
+
+    HD_TAG='@(' HD_TEXT='heredoc text' HD_END='heredoc end'
+
+    EPP_TEXT='epp text' EPP_START='<%' EPP_EXPR_START='<%=' EPP_START_TRIM='<%-'
+    EPP_END='%>' EPP_END_TRIM='-%>' EPP_COMMENT='<%#'
+
+    LINE_COMMENT='line comment' BLOCK_COMMENT='block comment'
+  ]
+}
+
+manifest ::= statement *
+
+private statement ::= class_definition
+                    | define_definition
+                    | node_definition
+                    | function_definition
+                    | type_alias
+                    | plan_definition
+                    | bare_function_call
+                    | expression_statement
+                    | SEMIC
+
+private expression_statement ::= expr SEMIC?
+
+bare_function_call ::= <<statementFunctionName>> expr (COMMA expr)* SEMIC? { pin=1 }
+
+class_definition ::= CLASS !LBRACE qualified_name parameter_list? inherits_clause? block {
+  pin=3
+  mixin="net.blendbyte.openvox.psi.impl.OpenVoxNamedElementImpl"
+  implements="net.blendbyte.openvox.psi.OpenVoxNamedElement"
+}
+
+inherits_clause ::= INHERITS qualified_name { pin=1 }
+
+define_definition ::= DEFINE qualified_name parameter_list? block {
+  pin=1
+  mixin="net.blendbyte.openvox.psi.impl.OpenVoxNamedElementImpl"
+  implements="net.blendbyte.openvox.psi.OpenVoxNamedElement"
+}
+
+node_definition ::= NODE node_matcher (COMMA node_matcher)* block { pin=1 }
+private node_matcher ::= DEFAULT | REGEX | qualified_name | SQ_STRING | dq_string | NUMBER
+
+function_definition ::= FUNCTION qualified_name parameter_list? return_type? block {
+  pin=1
+  mixin="net.blendbyte.openvox.psi.impl.OpenVoxNamedElementImpl"
+  implements="net.blendbyte.openvox.psi.OpenVoxNamedElement"
+}
+
+return_type ::= RSHIFT data_type { pin=1 }
+
+type_alias ::= TYPE data_type EQUALS expr {
+  pin=3
+  mixin="net.blendbyte.openvox.psi.impl.OpenVoxNamedElementImpl"
+  implements="net.blendbyte.openvox.psi.OpenVoxNamedElement"
+}
+
+plan_definition ::= PLAN qualified_name parameter_list? block { pin=1 }
+
+block ::= LBRACE statement * RBRACE { pin=1 }
+
+parameter_list ::= (LPAREN | WSLPAREN) (parameter (COMMA parameter)* COMMA?)? RPAREN { pin=1 }
+
+parameter ::= data_type? TIMES? VARIABLE (EQUALS expr)? {
+  mixin="net.blendbyte.openvox.psi.impl.OpenVoxNamedElementImpl"
+  implements="net.blendbyte.openvox.psi.OpenVoxNamedElement"
+}
+
+data_type ::= type_reference data_type_parameters?
+data_type_parameters ::= (LBRACK | LISTSTART) (expr (COMMA expr)* COMMA?)? RBRACK { pin=1 }
+
+expr ::= relationship_expr
+       | assign_expr
+       | or_expr
+       | and_expr
+       | selector_expr
+       | comparison_expr
+       | equality_expr
+       | shift_expr
+       | additive_expr
+       | multiplicative_expr
+       | match_expr
+       | in_expr
+       | unary_group
+       | access_expr
+       | method_call_expr
+       | primary_group
+
+relationship_expr ::= expr (IN_EDGE | IN_EDGE_SUB | OUT_EDGE | OUT_EDGE_SUB) expr
+assign_expr ::= expr (EQUALS | APPENDS | DELETES) expr {
+  rightAssociative=true
+  mixin="net.blendbyte.openvox.psi.impl.OpenVoxNamedElementImpl"
+  implements="net.blendbyte.openvox.psi.OpenVoxNamedElement"
+}
+or_expr ::= expr OR expr
+and_expr ::= expr AND expr
+selector_expr ::= expr QMARK SELBRACE (selector_entry (COMMA selector_entry)* COMMA?)? RBRACE
+selector_entry ::= (DEFAULT | expr) FARROW expr
+comparison_expr ::= expr (GREATERTHAN | GREATEREQUAL | LESSTHAN | LESSEQUAL) expr
+equality_expr ::= expr (ISEQUAL | NOTEQUAL) expr
+shift_expr ::= expr (LSHIFT | RSHIFT) expr
+additive_expr ::= expr (PLUS | MINUS) expr
+multiplicative_expr ::= expr (TIMES | DIV | MODULO) expr
+match_expr ::= expr (MATCH | NOMATCH) expr
+in_expr ::= expr IN expr
+
+private unary_group ::= not_expr | negation_expr | splat_expr
+not_expr ::= NOT expr
+negation_expr ::= MINUS expr
+splat_expr ::= TIMES expr
+
+access_expr ::= expr LBRACK (expr (COMMA expr)* COMMA?)? RBRACK
+method_call_expr ::= expr DOT (IDENTIFIER | TYPE) argument_list? lambda?
+
+private primary_group ::= if_expression
+                        | unless_expression
+                        | case_expression
+                        | resource_expression
+                        | resource_defaults_expression
+                        | collector_expression
+                        | function_call_expr
+                        | paren_expr
+                        | array_literal
+                        | hash_literal
+                        | literal_expr
+                        | dq_string
+                        | heredoc
+                        | variable_expr
+                        | type_reference
+                        | word_ref
+                        | epp_render
+
+paren_expr ::= (LPAREN | WSLPAREN) expr RPAREN
+
+if_expression ::= IF expr block elsif_clause * else_clause? { pin=1 }
+elsif_clause ::= ELSIF expr block { pin=1 }
+else_clause ::= ELSE block { pin=1 }
+unless_expression ::= UNLESS expr block else_clause? { pin=1 }
+
+case_expression ::= CASE expr LBRACE case_option * RBRACE { pin=1 }
+case_option ::= case_matcher (COMMA case_matcher)* COLON block { pin=3 }
+private case_matcher ::= DEFAULT | expr
+
+resource_expression ::= (AT | ATAT)? resource_type LBRACE resource_body (SEMIC resource_body)* SEMIC? RBRACE
+resource_type ::= CLASS | CLASSREF | IDENTIFIER | BARE_WORD
+resource_body ::= resource_title COLON attribute_operations? COMMA?
+private resource_title ::= DEFAULT | expr
+attribute_operations ::= attribute_operation (COMMA attribute_operation)* COMMA?
+attribute_operation ::= (attribute_name (FARROW | PARROW) expr) | (TIMES FARROW expr) { pin=2 }
+private attribute_name ::= IDENTIFIER | BARE_WORD | keyword_as_name
+private keyword_as_name ::= AND | CASE | CLASS | DEFAULT | DEFINE | ELSE | ELSIF | IF | IN
+                          | INHERITS | NODE | OR | UNDEF | UNLESS | TYPE | ATTR | FUNCTION
+                          | PRIVATE | PLAN | APPLY | TRUE | FALSE
+
+resource_defaults_expression ::= type_reference (LBRACK (expr (COMMA expr)* COMMA?)? RBRACK)? LBRACE attribute_operations? RBRACE
+
+collector_expression ::= type_reference (LCOLLECT | LLCOLLECT) expr? (RCOLLECT | RRCOLLECT) { pin=2 }
+
+function_call_expr ::= (qualified_name | TYPE) (argument_list lambda? | lambda) { pin=2 }
+argument_list ::= (LPAREN | WSLPAREN) (expr (COMMA expr)* COMMA?)? RPAREN { pin=1 }
+lambda ::= PIPE (parameter (COMMA parameter)* COMMA?)? PIPE block { pin=1 }
+
+array_literal ::= (LBRACK | LISTSTART) (expr (COMMA expr)* COMMA?)? RBRACK { pin=1 }
+hash_literal ::= LBRACE (hash_entry (COMMA hash_entry)* COMMA?)? RBRACE { pin=1 }
+hash_entry ::= hash_key FARROW expr { pin=2 }
+private hash_key ::= expr | keyword_as_name
+
+literal_expr ::= NUMBER | TRUE | FALSE | UNDEF | DEFAULT | REGEX | SQ_STRING
+
+dq_string ::= DQ_START (DQ_TEXT | DQ_ESCAPE | interpolation | variable_expr)* DQ_END { pin=1 }
+interpolation ::= INTERP_START (expr | keyword_as_name)? INTERP_END { pin=1 }
+
+heredoc ::= HD_TAG (expr (COMMA expr)*)? RPAREN { pin=1 }
+
+variable_expr ::= VARIABLE {
+  mixin="net.blendbyte.openvox.psi.impl.OpenVoxVariableMixin"
+}
+
+type_reference ::= CLASSREF { mixin="net.blendbyte.openvox.psi.impl.OpenVoxTypeReferenceMixin" }
+
+word_ref ::= BARE_WORD | IDENTIFIER
+
+qualified_name ::= IDENTIFIER | BARE_WORD | CLASSREF | SQ_STRING
+
+epp_template ::= epp_parameters? statement *
+
+epp_parameters ::= PIPE (parameter (COMMA parameter)* COMMA?)? PIPE { pin=1 }
+
+epp_render ::= EPP_TEXT

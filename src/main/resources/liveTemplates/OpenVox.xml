@@ -1,0 +1,45 @@
+<templateSet group="OpenVox">
+  <template name="class" value="class $NAME$ (&#10;) {&#10;  $END$&#10;}"
+            description="Parameterised class" toReformat="true" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue="&quot;profile::&quot;" alwaysStopAt="true"/>
+    <context><option name="OpenVox" value="true"/></context>
+  </template>
+  <template name="define" value="define $NAME$ (&#10;) {&#10;  $END$&#10;}"
+            description="Defined resource type" toReformat="true" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue="" alwaysStopAt="true"/>
+    <context><option name="OpenVox" value="true"/></context>
+  </template>
+  <template name="res" value="$TYPE$ { $TITLE$:&#10;  $ATTR$ =&gt; $VALUE$,&#10;}$END$"
+            description="Resource declaration" toReformat="true" toShortenFQNames="false">
+    <variable name="TYPE" expression="" defaultValue="&quot;file&quot;" alwaysStopAt="true"/>
+    <variable name="TITLE" expression="" defaultValue="&quot;'/path'&quot;" alwaysStopAt="true"/>
+    <variable name="ATTR" expression="" defaultValue="&quot;ensure&quot;" alwaysStopAt="true"/>
+    <variable name="VALUE" expression="" defaultValue="&quot;file&quot;" alwaysStopAt="true"/>
+    <context><option name="OpenVox" value="true"/></context>
+  </template>
+  <template name="fn" value="function $NAME$ ($PARAMS$) &gt;&gt; $RETURN$ {&#10;  $END$&#10;}"
+            description="Puppet-language function" toReformat="true" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue="" alwaysStopAt="true"/>
+    <variable name="PARAMS" expression="" defaultValue="" alwaysStopAt="true"/>
+    <variable name="RETURN" expression="" defaultValue="&quot;String&quot;" alwaysStopAt="true"/>
+    <context><option name="OpenVox" value="true"/></context>
+  </template>
+  <template name="ta" value="type $NAME$ = $TYPE$$END$"
+            description="Type alias" toReformat="true" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue="" alwaysStopAt="true"/>
+    <variable name="TYPE" expression="" defaultValue="&quot;String[1]&quot;" alwaysStopAt="true"/>
+    <context><option name="OpenVox" value="true"/></context>
+  </template>
+  <template name="each" value="$COLLECTION$.each |$ITEM$| {&#10;  $END$&#10;}"
+            description="Iterate a collection" toReformat="true" toShortenFQNames="false">
+    <variable name="COLLECTION" expression="" defaultValue="" alwaysStopAt="true"/>
+    <variable name="ITEM" expression="" defaultValue="&quot;$item&quot;" alwaysStopAt="true"/>
+    <context><option name="OpenVox" value="true"/></context>
+  </template>
+  <template name="case" value="case $SUBJECT$ {&#10;  $MATCH$: {&#10;    $END$&#10;  }&#10;  default: {&#10;  }&#10;}"
+            description="Case expression" toReformat="true" toShortenFQNames="false">
+    <variable name="SUBJECT" expression="" defaultValue="" alwaysStopAt="true"/>
+    <variable name="MATCH" expression="" defaultValue="" alwaysStopAt="true"/>
+    <context><option name="OpenVox" value="true"/></context>
+  </template>
+</templateSet>

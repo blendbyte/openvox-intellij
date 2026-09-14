@@ -1,0 +1,79 @@
+# Curated structured fact paths for Facter and OpenFact; availability depends on the target system.
+os.name	Operating system name, e.g. Ubuntu, CentOS, Darwin, windows.
+os.family	Operating system family, e.g. Debian, RedHat, Suse, Darwin, windows.
+os.release.full	Full operating system release, e.g. 22.04.
+os.release.major	Major component of the operating system release, e.g. 22.
+os.release.minor	Minor component of the operating system release, e.g. 04.
+os.distro.codename	Distribution code name, e.g. jammy.
+os.distro.description	Human-readable distribution description.
+os.distro.id	Distribution identifier, e.g. Ubuntu.
+os.distro.release.full	Full distribution release.
+os.architecture	Hardware architecture as the operating system reports it, e.g. x86_64.
+os.hardware	Hardware model, e.g. x86_64 or arm64.
+os.selinux.enabled	Whether SELinux is enabled.
+os.windows.system32	Path to the Windows system32 directory.
+networking.hostname	Short hostname.
+networking.domain	DNS domain.
+networking.fqdn	Fully qualified domain name.
+networking.ip	Primary IPv4 address.
+networking.ip6	Primary IPv6 address.
+networking.mac	MAC address of the primary interface.
+networking.netmask	Netmask of the primary interface.
+networking.network	Network address of the primary interface.
+networking.primary	Name of the primary network interface.
+networking.interfaces	Hash of every network interface, keyed by name.
+networking.dhcp	Address of the DHCP server that configured the primary interface.
+kernel	Kernel name, e.g. Linux, Darwin, windows.
+kernelversion	Kernel version, without any release suffix.
+kernelrelease	Full kernel release string.
+kernelmajversion	Major component of the kernel version.
+memory.system.total	Total system memory, human readable.
+memory.system.total_bytes	Total system memory in bytes.
+memory.system.available	Available system memory, human readable.
+memory.system.available_bytes	Available system memory in bytes.
+memory.system.used	Used system memory, human readable.
+memory.system.capacity	Percentage of system memory in use.
+memory.swap.total	Total swap, human readable.
+memory.swap.available	Available swap, human readable.
+processors.count	Number of logical processors.
+processors.physicalcount	Number of physical processors.
+processors.models	Array of processor model strings.
+processors.isa	Instruction set architecture.
+processors.speed	Processor speed.
+disks	Hash of physical disks, keyed by device name.
+partitions	Hash of disk partitions, keyed by device name.
+mountpoints	Hash of mount points, keyed by path.
+filesystems	Comma-separated list of supported filesystems.
+identity.user	Name of the user running the agent.
+identity.uid	User id of the user running the agent.
+identity.group	Primary group of the user running the agent.
+identity.gid	Group id of the user running the agent.
+identity.privileged	Whether the agent is running with elevated privileges.
+path	The PATH environment variable of the agent process.
+timezone	Local timezone abbreviation.
+virtual	Virtualisation technology, or physical when none.
+is_virtual	Whether the machine is virtualised.
+hypervisors	Hash describing detected hypervisors.
+system_uptime.seconds	Uptime in seconds.
+system_uptime.hours	Uptime in hours.
+system_uptime.days	Uptime in days.
+system_uptime.uptime	Uptime as a human-readable string.
+load_averages.1m	One-minute load average.
+load_averages.5m	Five-minute load average.
+load_averages.15m	Fifteen-minute load average.
+dmi.manufacturer	System manufacturer as reported by DMI.
+dmi.product.name	Product name as reported by DMI.
+dmi.product.serial_number	Serial number as reported by DMI.
+dmi.bios.vendor	BIOS vendor.
+dmi.bios.version	BIOS version.
+dmi.bios.release_date	BIOS release date.
+ssh.rsa.key	Host RSA public key.
+ssh.rsa.fingerprints.sha256	SHA-256 fingerprint of the host RSA key.
+ssh.ed25519.key	Host ed25519 public key.
+facterversion	Version of Facter producing these facts.
+puppetversion	Version of the agent.
+aio_agent_version	Version of the all-in-one agent package.
+ruby.version	Ruby version the agent runs on.
+ruby.platform	Ruby platform string.
+ruby.sitedir	Ruby site directory.
+fips_enabled	Whether the system is running in FIPS mode.

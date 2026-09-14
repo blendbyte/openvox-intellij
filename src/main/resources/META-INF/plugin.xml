@@ -1,0 +1,119 @@
+<idea-plugin>
+    <depends>com.intellij.modules.platform</depends>
+
+    <description><![CDATA[
+      <p>Language support for <b>OpenVox</b> and Puppet manifests (<code>.pp</code>) and
+      Embedded Puppet templates (<code>.epp</code>), supporting OpenVox 8 and
+      OpenVox 9 prereleases (checked against 9.0.0-rc1).</p>
+      <ul>
+        <li><b>Editing</b> - syntax highlighting with a configurable colour scheme, brace
+            matching, folding, live templates and a structure view.</li>
+        <li><b>Formatting</b> - aligns the <code>=&gt;</code> of every attribute in a resource
+            body, hash and selector, as the style guide requires, with its own code style page.</li>
+        <li><b>Navigation</b> - go to the declaration of a class, defined type, function, type
+            alias, parameter or variable; find usages; rename; Go to Class and Go to Symbol;
+            jump from <code>epp()</code>, <code>template()</code> and <code>source =&gt;</code>
+            to the file they name.</li>
+        <li><b>Completion</b> - resource attributes and their allowed values, data types and
+            type aliases, resource types, fact keys inside <code>$facts[...]</code>, built-in
+            and project functions, and variables in scope.</li>
+        <li><b>Quick documentation</b> for built-in functions, resource types, attributes and
+            data types, with compatibility notes for OpenVox 8 and 9.</li>
+        <li><b>Inspections</b> - unknown function, unknown attribute, unresolved variable,
+            unused parameter, and legacy top-scope facts with a quick fix that rewrites them
+            as <code>$facts[...]</code>.</li>
+        <li><b>External validation</b> - optional <code>puppet parser validate</code> and
+            <code>puppet-lint</code> integration.</li>
+        <li>Modern language constructs throughout: parameterised data types such as
+            <code>Optional[Variant[String[1], Enum['a','b']]]</code>, <code>Sensitive</code>,
+            <code>Init</code>, type aliases, Puppet-language functions, lambdas, heredocs and
+            EPP tags.</li>
+      </ul>
+      <p>This plugin is community-maintained and is not affiliated with Perforce or Vox Pupuli.</p>
+    ]]></description>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="OpenVox" language="OpenVox" extensions="pp"
+                  implementationClass="net.blendbyte.openvox.OpenVoxFileType" fieldName="INSTANCE"/>
+        <fileType name="EPP" language="EPP" extensions="epp"
+                  implementationClass="net.blendbyte.openvox.EppFileType" fieldName="INSTANCE"/>
+
+        <lang.parserDefinition language="OpenVox"
+                               implementationClass="net.blendbyte.openvox.parser.OpenVoxParserDefinition"/>
+        <lang.parserDefinition language="EPP"
+                               implementationClass="net.blendbyte.openvox.parser.EppParserDefinition"/>
+
+        <lang.syntaxHighlighterFactory language="OpenVox"
+                                       implementationClass="net.blendbyte.openvox.highlighting.OpenVoxSyntaxHighlighterFactory"/>
+        <lang.syntaxHighlighterFactory language="EPP"
+                                       implementationClass="net.blendbyte.openvox.highlighting.EppSyntaxHighlighterFactory"/>
+
+        <lang.commenter language="OpenVox" implementationClass="net.blendbyte.openvox.OpenVoxCommenter"/>
+        <lang.braceMatcher language="OpenVox" implementationClass="net.blendbyte.openvox.OpenVoxBraceMatcher"/>
+
+        <colorSettingsPage implementation="net.blendbyte.openvox.highlighting.OpenVoxColorSettingsPage"/>
+        <lang.foldingBuilder language="OpenVox" implementationClass="net.blendbyte.openvox.editor.OpenVoxFoldingBuilder"/>
+        <lang.foldingBuilder language="EPP" implementationClass="net.blendbyte.openvox.editor.OpenVoxFoldingBuilder"/>
+        <lang.quoteHandler language="OpenVox" implementationClass="net.blendbyte.openvox.editor.OpenVoxQuoteHandler"/>
+        <lang.psiStructureViewFactory language="OpenVox"
+                                      implementationClass="net.blendbyte.openvox.structure.OpenVoxStructureViewFactory"/>
+        <liveTemplateContext contextId="OpenVox"
+                             implementation="net.blendbyte.openvox.editor.OpenVoxLiveTemplateContext"/>
+        <defaultLiveTemplates file="/liveTemplates/OpenVox.xml"/>
+        <fileBasedIndex implementation="net.blendbyte.openvox.index.OpenVoxDeclarationIndex"/>
+        <fileBasedIndex implementation="net.blendbyte.openvox.index.OpenVoxHieraIndex"/>
+        <fileBasedIndex implementation="net.blendbyte.openvox.index.OpenVoxRubyFunctionIndex"/>
+        <psi.referenceContributor language="OpenVox"
+                                  implementation="net.blendbyte.openvox.resolve.OpenVoxReferenceContributor"/>
+        <psi.referenceContributor language="EPP"
+                                  implementation="net.blendbyte.openvox.resolve.OpenVoxReferenceContributor"/>
+        <lang.findUsagesProvider language="OpenVox"
+                                 implementationClass="net.blendbyte.openvox.resolve.OpenVoxFindUsagesProvider"/>
+        <referencesSearch implementation="net.blendbyte.openvox.resolve.OpenVoxReferenceSearcher"/>
+        <gotoClassContributor implementation="net.blendbyte.openvox.resolve.OpenVoxGotoClassContributor"/>
+        <gotoSymbolContributor implementation="net.blendbyte.openvox.resolve.OpenVoxGotoSymbolContributor"/>
+        <completion.contributor language="OpenVox"
+                                implementationClass="net.blendbyte.openvox.completion.OpenVoxCompletionContributor"/>
+        <completion.contributor language="EPP"
+                                implementationClass="net.blendbyte.openvox.completion.OpenVoxCompletionContributor"/>
+        <lang.documentationProvider language="OpenVox"
+                                    implementationClass="net.blendbyte.openvox.completion.OpenVoxDocumentationProvider"/>
+        <lang.documentationProvider language="EPP"
+                                    implementationClass="net.blendbyte.openvox.completion.OpenVoxDocumentationProvider"/>
+        <psi.referenceContributor language="OpenVox"
+                                  implementation="net.blendbyte.openvox.project.OpenVoxProjectReferenceContributor"/>
+        <codeInsight.lineMarkerProvider language="OpenVox"
+                                        implementationClass="net.blendbyte.openvox.project.OpenVoxHieraLineMarkerProvider"/>
+        <localInspection language="OpenVox" shortName="OpenVoxUnknownFunction"
+                         displayName="Unknown function" groupName="OpenVox"
+                         enabledByDefault="true" level="WARNING"
+                         implementationClass="net.blendbyte.openvox.inspections.OpenVoxUnknownFunctionInspection"/>
+        <localInspection language="OpenVox" shortName="OpenVoxUnknownAttribute"
+                         displayName="Unknown resource attribute" groupName="OpenVox"
+                         enabledByDefault="true" level="WARNING"
+                         implementationClass="net.blendbyte.openvox.inspections.OpenVoxUnknownAttributeInspection"/>
+        <localInspection language="OpenVox" shortName="OpenVoxUnresolvedVariable"
+                         displayName="Unresolved variable" groupName="OpenVox"
+                         enabledByDefault="true" level="WARNING"
+                         implementationClass="net.blendbyte.openvox.inspections.OpenVoxUnresolvedVariableInspection"/>
+        <localInspection language="OpenVox" shortName="OpenVoxLegacyFact"
+                         displayName="Legacy top-scope fact" groupName="OpenVox"
+                         enabledByDefault="true" level="WEAK WARNING"
+                         implementationClass="net.blendbyte.openvox.inspections.OpenVoxLegacyFactInspection"/>
+        <localInspection language="OpenVox" shortName="OpenVoxUnusedParameter"
+                         displayName="Unused parameter" groupName="OpenVox"
+                         enabledByDefault="true" level="WARNING"
+                         implementationClass="net.blendbyte.openvox.inspections.OpenVoxUnusedParameterInspection"/>
+
+        <externalAnnotator language="OpenVox"
+                           implementationClass="net.blendbyte.openvox.annotator.OpenVoxExternalAnnotator"/>
+        <applicationConfigurable parentId="tools" instance="net.blendbyte.openvox.settings.OpenVoxConfigurable"
+                                 id="net.blendbyte.openvox.settings" displayName="OpenVox / Puppet"/>
+        <lang.formatter language="OpenVox"
+                        implementationClass="net.blendbyte.openvox.formatting.OpenVoxFormattingModelBuilder"/>
+        <codeStyleSettingsProvider
+            implementation="net.blendbyte.openvox.formatting.OpenVoxCodeStyleSettingsProvider"/>
+        <langCodeStyleSettingsProvider
+            implementation="net.blendbyte.openvox.formatting.OpenVoxLanguageCodeStyleSettingsProvider"/>
+    </extensions>
+</idea-plugin>

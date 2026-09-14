@@ -1,0 +1,31 @@
+OpenVox and Puppet Language plugin for IntelliJ Platform IDEs
+Copyright 2026 Blendbyte GmbH
+
+This product includes software developed as part of the OpenVox project
+(https://github.com/OpenVoxProject/openvox), licensed under the Apache License 2.0.
+
+The grammar in src/main/grammar/OpenVox.bnf and the lexer in
+src/main/grammar/OpenVox.flex were written from the OpenVox 8 reference
+implementation - lib/puppet/pops/parser/lexer2.rb, egrammar.ra and the EPP
+support files - and from the published language specification. No code from any
+other IDE plugin was used, decompiled or consulted.
+
+src/main/grammar/idea-flex.skeleton is the JFlex skeleton from IntelliJ IDEA
+Community Edition (https://github.com/JetBrains/intellij-community),
+licensed under the Apache License 2.0.
+
+The Gradle wrapper (gradlew, gradlew.bat, gradle/wrapper/gradle-wrapper.jar and
+gradle/wrapper/gradle-wrapper.properties) is Copyright the original authors,
+licensed under the Apache License 2.0.
+
+settings.gradle.kts follows the structure of JetBrains' IntelliJ Platform Plugin
+Template (https://github.com/JetBrains/intellij-platform-plugin-template),
+licensed under the Apache License 2.0.
+
+The distributed plugin archive contains only code from this repository. No
+third-party binaries are bundled; the IntelliJ Platform, Kotlin standard library
+and test libraries are compile- or test-scope only.
+
+Puppet is a trademark of Perforce Software, Inc. OpenVox is a project of
+Vox Pupuli. This plugin is an independent, community-maintained project and is
+not affiliated with, endorsed by or sponsored by either.
