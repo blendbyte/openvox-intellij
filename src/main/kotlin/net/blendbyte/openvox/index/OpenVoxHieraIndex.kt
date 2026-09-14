@@ -20,7 +20,7 @@ class OpenVoxHieraIndex : ScalarIndexExtension<String>() {
     }
 
     companion object {
-        val KEY: ID<String, Void> = ID.create("net.blendbyte.openvox.hiera")
+        val KEY: ID<String, Void> = ID.create("net.blendbyte.openvox-intellij.hiera")
         private const val NAME = "[a-z][\\w]*(?:::[a-zA-Z_][\\w]*)+"
         private val KEYS = Regex("(?m)^[ \\t]*(?:($NAME)|\"($NAME)\"|'($NAME)'):[ \\t]*(?:[^\\r\\n]*)$")
     }

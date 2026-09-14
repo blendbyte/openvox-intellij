@@ -13,6 +13,8 @@ Language support for **OpenVox 8 and 9** and Puppet manifests (`.pp`) and Embedd
 
 Optional `puppet parser validate` and `puppet-lint` checks run when their executables are available on PATH. Configure paths or disable the checks under **Settings → Tools → OpenVox / Puppet**. Point validation at your target OpenVox installation; the editor supports both versions without a language switch.
 
+If you installed an early build named **OpenVox and Puppet Language** (`net.blendbyte.openvox`), uninstall it and restart the IDE before installing **OpenVox Language** (`net.blendbyte.openvox-intellij`). The plugin ID changed, so the IDE treats these as separate plugins.
+
 ## Build and test
 
 Requires JDK 21. Use the included Gradle wrapper:

@@ -61,7 +61,7 @@ class OpenVoxDeclarationIndex : ScalarIndexExtension<String>() {
     }
 
     companion object {
-        val KEY: ID<String, Void> = ID.create("net.blendbyte.openvox.declarations")
+        val KEY: ID<String, Void> = ID.create("net.blendbyte.openvox-intellij.declarations")
 
         fun keyFor(kind: OpenVoxDeclarationKind, name: String): String =
             "${kind.prefix}:${name.removePrefix("::").lowercase()}"

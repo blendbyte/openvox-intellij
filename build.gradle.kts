@@ -84,6 +84,9 @@ val generateOpenVoxLexer by tasks.registering(GenerateLexerTask::class) {
 sourceSets["main"].java.srcDir(generatedSrc)
 
 tasks {
+    named("build") {
+        dependsOn("buildPlugin")
+    }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         dependsOn(generateOpenVoxLexer, generateOpenVoxParser)
     }

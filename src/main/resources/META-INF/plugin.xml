@@ -1,5 +1,6 @@
 <idea-plugin>
     <depends>com.intellij.modules.platform</depends>
+    <incompatible-with>net.blendbyte.openvox</incompatible-with>
 
     <description><![CDATA[
       <p>Language tools for <b>OpenVox</b> and Puppet manifests (<code>.pp</code>), with
