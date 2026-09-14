@@ -1,4 +1,4 @@
-# OpenVox and Puppet Language
+# OpenVox Language
 
 Language support for **OpenVox 8 and 9** and Puppet manifests (`.pp`) and Embedded Puppet templates (`.epp`) in IntelliJ Platform IDEs, including IntelliJ IDEA, PhpStorm, RubyMine, and GoLand. Requires IDE build **252 (2025.2) or newer**. OpenVox 9 support is provisional, checked against **9.0.0-rc1**; see [version compatibility](docs/compatibility.md). CI checks recommended stable and EAP IDE releases.
 

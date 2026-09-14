@@ -34,8 +34,8 @@ kotlin {
 
 intellijPlatform {
     pluginConfiguration {
-        id = "net.blendbyte.openvox"
-        name = "OpenVox and Puppet Language"
+        id = "net.blendbyte.openvox-intellij"
+        name = "OpenVox Language"
         version = project.version.toString()
         vendor {
             name = "Blendbyte GmbH"

@@ -2,8 +2,9 @@
     <depends>com.intellij.modules.platform</depends>
 
     <description><![CDATA[
-      <p>Language support for <b>OpenVox</b> and Puppet manifests (<code>.pp</code>) and
-      Embedded Puppet templates (<code>.epp</code>), supporting OpenVox 8 and
+      <p>Language tools for <b>OpenVox</b> and Puppet manifests (<code>.pp</code>), with
+      completion, navigation, refactoring, and EPP template editing (<code>.epp</code>).
+      Supports OpenVox 8 and
       OpenVox 9 prereleases (checked against 9.0.0-rc1).</p>
       <ul>
         <li><b>Editing</b> - syntax highlighting with a configurable colour scheme, brace
