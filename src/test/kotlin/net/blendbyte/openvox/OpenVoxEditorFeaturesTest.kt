@@ -10,6 +10,7 @@ import net.blendbyte.openvox.annotator.OpenVoxLintLayout
 import net.blendbyte.openvox.annotator.OpenVoxToolOutput
 import net.blendbyte.openvox.completion.OpenVoxDocumentationProvider
 import net.blendbyte.openvox.inspections.OpenVoxUnknownAttributeInspection
+import net.blendbyte.openvox.settings.OpenVoxSettings
 import net.blendbyte.openvox.psi.OpenVoxNamedElement
 import net.blendbyte.openvox.structure.OpenVoxStructureViewFactory
 import java.nio.file.Files
@@ -142,5 +143,11 @@ class OpenVoxEditorFeaturesTest : BasePlatformTestCase() {
         val findings = OpenVoxToolOutput.parsePuppetLint(lint)
         assertEquals(listOf(HighlightSeverity.ERROR, HighlightSeverity.WARNING), findings.map { it.severity })
         assertTrue(findings[1].message.endsWith("found it in column 12)"))
+    }
+
+    fun testExecutableLookupOnPath() {
+        val settings = OpenVoxSettings.getInstance()
+        assertTrue(settings.findOnPath("sh")!!.endsWith("sh"))
+        assertNull(settings.findOnPath("openvox-no-such-tool"))
     }
 }

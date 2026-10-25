@@ -13,7 +13,6 @@ import com.intellij.psi.PsiFile
 import net.blendbyte.openvox.EppLanguage
 import net.blendbyte.openvox.OpenVoxLanguage
 import net.blendbyte.openvox.settings.OpenVoxSettings
-import com.intellij.openapi.util.io.FileUtil
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -81,7 +80,7 @@ class OpenVoxExternalAnnotator :
             if (exception is ControlFlowException) throw exception
             emptyList()
         } finally {
-            directory?.let { runCatching { FileUtil.delete(it) } }
+            directory?.let { runCatching { it.toFile().deleteRecursively() } }
         }
     }
 
