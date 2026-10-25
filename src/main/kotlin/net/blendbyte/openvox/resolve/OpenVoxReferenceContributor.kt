@@ -46,17 +46,13 @@ class OpenVoxReferenceContributor : PsiReferenceContributor() {
 }
 
 private object QuotedClassProvider : PsiReferenceProvider() {
-    private val CLASS_NAME = Regex("(?:::)?[a-z][\\w]*(?:::[a-z][\\w]*)*")
     override fun getReferencesByElement(element: PsiElement, context: ProcessingContext): Array<PsiReference> {
-        val isClassCall = OpenVoxReferenceContext.statementCallName(element) in OpenVoxReferenceContext.CLASS_CALLS ||
-            OpenVoxReferenceContext.parenthesisedCallName(element) in OpenVoxReferenceContext.CLASS_CALLS
-        if (!isClassCall) return PsiReference.EMPTY_ARRAY
-        val text = element.text
-        if (text.length < 3 || text.first() != text.last() || text.first() !in "'\"") return PsiReference.EMPTY_ARRAY
-        if (!CLASS_NAME.matches(text.substring(1, text.lastIndex))) {
-            return PsiReference.EMPTY_ARRAY
-        }
-        return arrayOf(OpenVoxDeclarationReference(element, TextRange(1, text.lastIndex), listOf(OpenVoxDeclarationKind.CLASS)))
+        val namesClass = OpenVoxReferenceContext.statementCallName(element) in OpenVoxReferenceContext.CLASS_CALLS ||
+            OpenVoxReferenceContext.parenthesisedCallName(element) in OpenVoxReferenceContext.CLASS_CALLS ||
+            OpenVoxReferenceContext.isClassResourceTitle(element)
+        if (!namesClass || OpenVoxReferenceContext.quotedClassName(element) == null) return PsiReference.EMPTY_ARRAY
+        val range = TextRange(1, element.textLength - 1)
+        return arrayOf(OpenVoxDeclarationReference(element, range, listOf(OpenVoxDeclarationKind.CLASS)))
     }
 }
 

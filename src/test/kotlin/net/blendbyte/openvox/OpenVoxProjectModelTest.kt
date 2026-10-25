@@ -56,4 +56,26 @@ class OpenVoxProjectModelTest : BasePlatformTestCase() {
         }
         assertTrue(myFixture.findAllGutters().isEmpty())
     }
+
+    fun testTemplateResolvesInModuleRepositoryNamedAfterItsAuthor() {
+        myFixture.addFileToProject("puppetlabs-apache/metadata.json", "{\n  \"name\": \"puppetlabs-apache\"\n}\n")
+        myFixture.addFileToProject("puppetlabs-apache/templates/vhost.conf.epp", "<VirtualHost>\n")
+        myFixture.addFileToProject("other-apache/templates/vhost.conf.epp", "<VirtualHost>\n")
+        myFixture.configureByText("site.pp", "\$c = epp('apache/vho<caret>st.conf.epp')")
+        val targets = (myFixture.file.findReferenceAt(myFixture.caretOffset) as com.intellij.psi.PsiPolyVariantReference)
+            .multiResolve(false).mapNotNull { (it.element as? PsiFile)?.virtualFile?.path }
+        assertEquals(1, targets.size)
+        assertTrue(targets.single().contains("puppetlabs-apache"))
+    }
+
+    fun testHieraGutterSupportsHieradataButNotDefines() {
+        myFixture.addFileToProject("hieradata/common.yaml", "profile::agent::ensure: running\nprofile::site::port: 80\n")
+        myFixture.configureByText(
+            "init.pp",
+            "class profile::agent (String \$ensure = 'running') { }\ndefine profile::site (Integer \$port) { }",
+        )
+        val tooltips = myFixture.findAllGutters().mapNotNull { it.tooltipText }
+        assertTrue(tooltips.any { it.contains("profile::agent::ensure") })
+        assertFalse(tooltips.any { it.contains("profile::site::port") })
+    }
 }

@@ -7,7 +7,8 @@ import com.intellij.psi.util.PsiTreeUtil
 import net.blendbyte.openvox.psi.OpenVoxTypes as T
 
 sealed interface OpenVoxCompletionPlace {
-    data class AttributeName(val resourceType: String) : OpenVoxCompletionPlace
+    /** [resourceType] is the class name when [classResource] is set, as in `class { 'apache': }`. */
+    data class AttributeName(val resourceType: String, val classResource: Boolean = false) : OpenVoxCompletionPlace
 
     data class AttributeValue(val resourceType: String, val attributeName: String) : OpenVoxCompletionPlace
 
@@ -65,6 +66,11 @@ object OpenVoxCompletionContext {
                     }
                 }
 
+                if (type == T.LBRACE && ownerType == T.CLASS && decided is OpenVoxCompletionPlace.AttributeName) {
+                    val className = classTitle(leaves, index) ?: return OpenVoxCompletionPlace.Statement
+                    return OpenVoxCompletionPlace.AttributeName(className, classResource = true)
+                }
+
                 if ((type == T.LPAREN || type == T.WSLPAREN) && beforeOwner in DEFINITION_KEYWORDS) {
                     return OpenVoxCompletionPlace.DataType
                 }
@@ -120,6 +126,13 @@ object OpenVoxCompletionContext {
         if (subject != "facts" && subject != "trusted") return null
         val prefix = if (path.isEmpty()) "" else path.asReversed().joinToString(".") + "."
         return OpenVoxCompletionPlace.FactName(prefix, subject == "trusted")
+    }
+
+    /** The class named by `class { 'name':`, reading forward from the brace at [braceIndex]. */
+    private fun classTitle(leaves: List<PsiElement>, braceIndex: Int): String? {
+        val title = leaves.getOrNull(braceIndex - 1)?.takeIf { it.node?.elementType == T.SQ_STRING } ?: return null
+        if (leaves.getOrNull(braceIndex - 2)?.node?.elementType != T.COLON) return null
+        return title.text.removeSurrounding("'").removePrefix("::").lowercase()
     }
 
     private fun previousMeaningfulLeaves(position: PsiElement): Sequence<PsiElement> =

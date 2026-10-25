@@ -4,8 +4,8 @@ import com.intellij.psi.PsiElement
 import net.blendbyte.openvox.index.OpenVoxDeclarationKind
 import net.blendbyte.openvox.index.OpenVoxRubyFunctionIndex
 import net.blendbyte.openvox.knowledge.OpenVoxKnowledge
+import net.blendbyte.openvox.parser.OpenVoxParserUtil
 import net.blendbyte.openvox.resolve.OpenVoxResolver
-import net.blendbyte.openvox.psi.OpenVoxTypes as T
 
 internal object OpenVoxInspectionSupport {
 
@@ -64,30 +64,24 @@ internal object OpenVoxInspectionSupport {
     fun functionExists(element: PsiElement, name: String): Boolean {
         val bare = name.removePrefix("::")
         if (OpenVoxKnowledge.functions.containsKey(bare)) return true
-        if (bare in STATEMENT_CALLS) return true
+        if (bare in OpenVoxParserUtil.STATEMENT_CALLS) return true
         val project = element.project
         if (OpenVoxResolver.find(project, OpenVoxDeclarationKind.FUNCTION, bare).isNotEmpty()) return true
         return OpenVoxRubyFunctionIndex.exists(project, bare)
     }
-
-    private val STATEMENT_CALLS = setOf(
-        "require", "realize", "include", "contain", "tag",
-        "debug", "info", "notice", "warning", "err",
-        "fail", "break", "next", "return",
-    )
 
     fun attributeNamesFor(element: PsiElement, typeName: String): Set<String>? {
         val bare = typeName.removePrefix("::").lowercase()
         OpenVoxKnowledge.resourceTypes[bare]?.let { type ->
             return (type.attributes.map { it.name } + OpenVoxKnowledge.metaparameters.map { it.name }).toSet()
         }
-        val define = OpenVoxResolver.find(element.project, OpenVoxDeclarationKind.DEFINE, bare).firstOrNull()
-            ?: OpenVoxResolver.find(element.project, OpenVoxDeclarationKind.CLASS, bare).firstOrNull()
-            ?: return null
-        val parameters = define.node?.findChildByType(T.PARAMETER_LIST) ?: return null
-        val names = parameters.getChildren(null)
-            .filter { it.elementType == T.PARAMETER }
-            .mapNotNull { it.findChildByType(T.VARIABLE)?.text?.removePrefix("$") }
-        return (names + OpenVoxKnowledge.metaparameters.map { it.name }).toSet()
+        return declaredAttributes(element, bare, listOf(OpenVoxDeclarationKind.DEFINE, OpenVoxDeclarationKind.CLASS))
     }
+
+    fun classAttributeNames(element: PsiElement, className: String): Set<String>? =
+        declaredAttributes(element, className, listOf(OpenVoxDeclarationKind.CLASS))
+
+    private fun declaredAttributes(element: PsiElement, name: String, kinds: List<OpenVoxDeclarationKind>): Set<String>? =
+        OpenVoxResolver.parametersOf(element.project, name, kinds)
+            ?.let { (it + OpenVoxKnowledge.metaparameters.map { meta -> meta.name }).toSet() }
 }

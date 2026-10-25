@@ -42,9 +42,7 @@ class OpenVoxDocumentationProvider : AbstractDocumentationProvider() {
         }
         builder.append(DEFINITION_END)
 
-        commentAbove(declaration)?.let {
-            builder.append(CONTENT_START).append(escape(it)).append(CONTENT_END)
-        }
+        commentAbove(declaration)?.let { builder.append(renderComment(it)) }
         return builder.toString()
     }
 
@@ -78,20 +76,73 @@ class OpenVoxDocumentationProvider : AbstractDocumentationProvider() {
         return null
     }
 
-    private fun commentAbove(declaration: PsiElement): String? {
+    /** The `#` comment lines directly above [declaration], keeping indentation after the `# `. */
+    private fun commentAbove(declaration: PsiElement): List<String>? {
         val lines = mutableListOf<String>()
         var sibling = declaration.prevSibling
         while (sibling != null) {
             when {
                 sibling.node?.elementType == T.LINE_COMMENT ->
-                    lines += sibling.text.removePrefix("#").trim()
+                    lines += sibling.text.removePrefix("#").removePrefix(" ").trimEnd()
                 sibling is com.intellij.psi.PsiWhiteSpace && !sibling.text.contains("\n\n") -> Unit
                 else -> break
             }
             sibling = sibling.prevSibling
         }
-        return lines.asReversed().joinToString(" ").ifBlank { null }
+        return lines.asReversed().takeIf { it.any(String::isNotBlank) }
     }
+
+    private class Tag(val name: String?, val argument: String, val body: MutableList<String> = mutableListOf())
+
+    /** Renders puppet-strings comments: description, @summary, @param, @example and other tags. */
+    private fun renderComment(lines: List<String>): String {
+        val description = Tag(null, "")
+        val tags = mutableListOf(description)
+        var current = description
+        for (line in lines) {
+            val match = TAG.matchEntire(line.trim())
+            if (match != null) {
+                current = Tag(match.groupValues[1], match.groupValues[2]).also { tags += it }
+                continue
+            }
+            // A blank line ends a tag, except inside an example, which ends at the first unindented line.
+            val inExample = current.name == "example"
+            if (inExample && line.isNotBlank() && !line.first().isWhitespace() || !inExample && line.isBlank()) {
+                current = description
+            }
+            current.body += line
+        }
+        fun prose(tag: Tag) = escape((listOf(tag.argument) + tag.body).joinToString(" ") { it.trim() }.trim())
+
+        val content = StringBuilder()
+        tags.filter { it.name == "summary" }.forEach { content.append("<p>").append(prose(it)).append("</p>") }
+        description.body.joinToString("\n").trim().split(Regex("\n\\s*\n")).filter { it.isNotBlank() }
+            .forEach { content.append("<p>").append(escape(it.replace('\n', ' '))).append("</p>") }
+        tags.filter { it.name == "example" }.forEach { example ->
+            if (example.argument.isNotBlank()) content.append("<p><i>").append(escape(example.argument)).append("</i></p>")
+            content.append("<pre><code>").append(escape(example.body.joinToString("\n").trimIndent().trim('\n'))).append("</code></pre>")
+        }
+
+        val sections = StringBuilder()
+        val parameters = tags.filter { it.name == "param" }
+        if (parameters.isNotEmpty()) {
+            val rows = parameters.joinToString("<br/>") { parameter ->
+                val name = parameter.argument.substringBefore(' ')
+                val rest = Tag(null, parameter.argument.substringAfter(' ', ""), parameter.body)
+                "<code>${escape(name)}</code> &ndash; ${prose(rest)}"
+            }
+            sections.append(section("Parameters:", rows))
+        }
+        tags.filter { it.name != null && it.name !in setOf("summary", "param", "example") }.forEach {
+            sections.append(section("${it.name!!.replaceFirstChar(Char::uppercaseChar)}:", prose(it)))
+        }
+
+        return (if (content.isEmpty()) "" else CONTENT_START + content + CONTENT_END) +
+            (if (sections.isEmpty()) "" else SECTIONS_START + sections + SECTIONS_END)
+    }
+
+    private fun section(header: String, body: String) =
+        "<tr><td valign='top' class='section'><p>$header</td><td valign='top'>$body</td></tr>"
 
     private fun escape(text: String): String =
         text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -101,5 +152,8 @@ class OpenVoxDocumentationProvider : AbstractDocumentationProvider() {
         const val DEFINITION_END = "</pre></div>"
         const val CONTENT_START = "<div class='content'>"
         const val CONTENT_END = "</div>"
+        const val SECTIONS_START = "<table class='sections'>"
+        const val SECTIONS_END = "</table>"
+        val TAG = Regex("@(\\w+)\\s*(.*)")
     }
 }

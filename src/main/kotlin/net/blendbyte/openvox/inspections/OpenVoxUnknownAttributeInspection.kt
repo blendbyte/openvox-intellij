@@ -5,6 +5,7 @@ import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
+import net.blendbyte.openvox.resolve.OpenVoxReferenceContext
 import net.blendbyte.openvox.psi.OpenVoxTypes as T
 
 class OpenVoxUnknownAttributeInspection : LocalInspectionTool() {
@@ -25,12 +26,18 @@ class OpenVoxUnknownAttributeInspection : LocalInspectionTool() {
                     ?: resource.node?.findChildByType(T.TYPE_REFERENCE)
                     ?: return
 
-                val accepted = OpenVoxInspectionSupport.attributeNamesFor(element, typeElement.text) ?: return
+                val classResource = typeElement.findChildByType(T.CLASS) != null
+                val owner = if (classResource) OpenVoxReferenceContext.classResourceName(element) ?: return else typeElement.text
+                val accepted = if (classResource) {
+                    OpenVoxInspectionSupport.classAttributeNames(element, owner)
+                } else {
+                    OpenVoxInspectionSupport.attributeNamesFor(element, owner)
+                } ?: return
                 if (name in accepted) return
 
                 holder.registerProblem(
                     nameElement,
-                    "'${typeElement.text}' has no attribute '$name'",
+                    "'$owner' has no attribute '$name'",
                     ProblemHighlightType.LIKE_UNKNOWN_SYMBOL,
                 )
             }

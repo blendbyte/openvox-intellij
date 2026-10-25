@@ -7,6 +7,7 @@ import com.intellij.util.indexing.FileBasedIndex
 import net.blendbyte.openvox.index.OpenVoxDeclarationIndex
 import net.blendbyte.openvox.index.OpenVoxDeclarationKind
 import net.blendbyte.openvox.psi.OpenVoxNamedElement
+import net.blendbyte.openvox.psi.OpenVoxTypes as T
 
 object OpenVoxResolver {
 
@@ -32,6 +33,19 @@ object OpenVoxResolver {
 
     fun findAny(project: Project, name: String, scope: GlobalSearchScope = GlobalSearchScope.allScope(project)) =
         OpenVoxDeclarationKind.entries.flatMap { find(project, it, name, scope) }
+
+    /** Parameter names of the first declaration found among [kinds], or null when there is none. */
+    fun parametersOf(
+        project: Project,
+        name: String,
+        kinds: List<OpenVoxDeclarationKind> = listOf(OpenVoxDeclarationKind.DEFINE, OpenVoxDeclarationKind.CLASS),
+    ): List<String>? {
+        val declaration = kinds.firstNotNullOfOrNull { find(project, it, name).firstOrNull() } ?: return null
+        val parameters = declaration.node?.findChildByType(T.PARAMETER_LIST) ?: return emptyList()
+        return parameters.getChildren(null)
+            .filter { it.elementType == T.PARAMETER }
+            .mapNotNull { it.findChildByType(T.VARIABLE)?.text?.removePrefix("$") }
+    }
 
     fun allNames(project: Project, kind: OpenVoxDeclarationKind): List<String> {
         val prefix = "${kind.prefix}:"

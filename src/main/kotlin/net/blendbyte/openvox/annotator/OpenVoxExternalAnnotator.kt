@@ -12,7 +12,9 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import net.blendbyte.openvox.OpenVoxLanguage
 import net.blendbyte.openvox.settings.OpenVoxSettings
+import com.intellij.openapi.util.io.FileUtil
 import java.nio.file.Files
+import java.nio.file.Path
 
 data class OpenVoxExternalMessage(
     val line: Int,
@@ -22,7 +24,26 @@ data class OpenVoxExternalMessage(
     val source: String,
 )
 
-data class OpenVoxAnnotatorInput(val text: String)
+data class OpenVoxAnnotatorInput(val text: String, val path: Path?)
+
+/**
+ * Where the unsaved copy is written and where puppet-lint runs. The copy keeps the file's path
+ * below its module root, so puppet-lint's autoloader_layout check sees the real layout, and
+ * puppet-lint starts in the nearest directory with a .puppet-lint.rc so project settings apply.
+ */
+internal data class OpenVoxLintLayout(val relativePath: String, val workDirectory: Path?) {
+    companion object {
+        fun of(path: Path?): OpenVoxLintLayout {
+            val parent = path?.parent ?: return OpenVoxLintLayout("manifest.pp", null)
+            val manifests = generateSequence(parent) { it.parent }.firstOrNull { it.fileName?.toString() == "manifests" }
+            val moduleRoot = manifests?.parent ?: parent
+            val relative = moduleRoot.relativize(path).joinToString("/")
+            val workDirectory = generateSequence(moduleRoot) { it.parent }
+                .firstOrNull { Files.isRegularFile(it.resolve(".puppet-lint.rc")) } ?: moduleRoot
+            return OpenVoxLintLayout(relative, workDirectory)
+        }
+    }
+}
 
 class OpenVoxExternalAnnotator :
     ExternalAnnotator<OpenVoxAnnotatorInput, List<OpenVoxExternalMessage>>() {
@@ -32,7 +53,8 @@ class OpenVoxExternalAnnotator :
         if (hasErrors || file.language != OpenVoxLanguage) return null
         val settings = OpenVoxSettings.getInstance()
         if (!settings.runParserValidate && !settings.runPuppetLint) return null
-        return OpenVoxAnnotatorInput(editor.document.text)
+        val path = file.virtualFile?.let { it.fileSystem.getNioPath(it) }
+        return OpenVoxAnnotatorInput(editor.document.text, path)
     }
 
     override fun doAnnotate(collected: OpenVoxAnnotatorInput?): List<OpenVoxExternalMessage> {
@@ -42,19 +64,22 @@ class OpenVoxExternalAnnotator :
         val puppet = if (settings.runParserValidate) settings.resolvedPuppet() else null
         val lint = if (settings.runPuppetLint) settings.resolvedPuppetLint() else null
         if (puppet == null && lint == null) return emptyList()
-        var temporary: java.nio.file.Path? = null
+        val layout = OpenVoxLintLayout.of(input.path)
+        var directory: Path? = null
         return try {
-            temporary = Files.createTempFile("openvox-", ".pp")
-            Files.writeString(temporary, input.text)
+            directory = Files.createTempDirectory("openvox-")
+            val copy = directory.resolve(layout.relativePath)
+            Files.createDirectories(copy.parent)
+            Files.writeString(copy, input.text)
             buildList {
-                puppet?.let { addAll(runParserValidate(it, temporary.toString())) }
-                lint?.let { addAll(runPuppetLint(it, temporary.toString())) }
+                puppet?.let { addAll(runParserValidate(it, copy.toString())) }
+                lint?.let { addAll(runPuppetLint(it, copy.toString(), layout.workDirectory)) }
             }
         } catch (exception: Exception) {
             if (exception is ControlFlowException) throw exception
             emptyList()
         } finally {
-            temporary?.let { runCatching { Files.deleteIfExists(it) } }
+            directory?.let { runCatching { FileUtil.delete(it) } }
         }
     }
 
@@ -89,12 +114,13 @@ class OpenVoxExternalAnnotator :
         }.toList()
     }
 
-    private fun runPuppetLint(executable: String, path: String): List<OpenVoxExternalMessage> {
+    private fun runPuppetLint(executable: String, path: String, workDirectory: Path?): List<OpenVoxExternalMessage> {
         val command = GeneralCommandLine(
             executable,
+            "--relative",
             "--log-format", "%{line}:%{column}:%{kind}:%{message}",
             path,
-        )
+        ).withWorkDirectory(workDirectory?.toFile())
         val output = run(command) ?: return emptyList()
         return output.lineSequence().mapNotNull { line ->
             val parts = line.split(':', limit = 4)

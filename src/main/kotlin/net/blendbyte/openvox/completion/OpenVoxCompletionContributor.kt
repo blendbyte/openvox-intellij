@@ -44,7 +44,21 @@ private object OpenVoxCompletionProvider : CompletionProvider<CompletionParamete
 
         when (val place = OpenVoxCompletionContext.placeAt(position)) {
             is OpenVoxCompletionPlace.AttributeName -> {
-                OpenVoxKnowledge.attributesFor(place.resourceType).forEach { attribute ->
+                val builtIn = !place.classResource && OpenVoxKnowledge.resourceTypes.containsKey(place.resourceType)
+                if (!builtIn && place.resourceType.isNotEmpty()) {
+                    val kinds = if (place.classResource) listOf(OpenVoxDeclarationKind.CLASS)
+                    else listOf(OpenVoxDeclarationKind.DEFINE, OpenVoxDeclarationKind.CLASS)
+                    OpenVoxResolver.parametersOf(project, place.resourceType, kinds).orEmpty().forEach { name ->
+                        result.addElement(
+                            LookupElementBuilder.create(name)
+                                .withTypeText("parameter")
+                                .withInsertHandler(ArrowInsertHandler),
+                        )
+                    }
+                }
+                val attributes = if (place.classResource) OpenVoxKnowledge.metaparameters
+                else OpenVoxKnowledge.attributesFor(place.resourceType)
+                attributes.forEach { attribute ->
                     result.addElement(
                         LookupElementBuilder.create(attribute.name)
                             .withTypeText(attribute.kind)
@@ -121,6 +135,14 @@ private object OpenVoxCompletionProvider : CompletionProvider<CompletionParamete
                 OpenVoxResolver.allNames(project, OpenVoxDeclarationKind.DEFINE).forEach { name ->
                     result.addElement(LookupElementBuilder.create(name).withTypeText("defined type"))
                 }
+                OpenVoxKnowledge.resourceTypes.values.forEach { type ->
+                    result.addElement(
+                        LookupElementBuilder.create(type.name)
+                            .withTypeText("resource type")
+                            .withIcon(OpenVoxIcons.FILE),
+                    )
+                }
+                KEYWORDS.forEach { result.addElement(LookupElementBuilder.create(it).bold()) }
                 addVariables(parameters, result)
             }
         }
@@ -135,6 +157,11 @@ private object OpenVoxCompletionProvider : CompletionProvider<CompletionParamete
 
     private fun capitalise(name: String): String =
         name.split("::").joinToString("::") { it.replaceFirstChar(Char::uppercaseChar) }
+
+    private val KEYWORDS = listOf(
+        "class", "define", "function", "type", "node", "plan", "if", "unless", "elsif", "else", "case",
+        "inherits", "default", "undef", "true", "false", "and", "or", "in",
+    )
 
     private val TRUSTED_FACTS = listOf("authenticated", "certname", "domain", "extensions", "external", "hostname")
 }

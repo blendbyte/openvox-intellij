@@ -19,13 +19,14 @@ class OpenVoxHieraLineMarkerProvider : RelatedItemLineMarkerProvider() {
         val owner = generateSequence(element.parent.parent) { it.parent }
             .filterIsInstance<OpenVoxNamedElement>()
             .firstOrNull { OpenVoxDeclarationKind.of(it) != null } ?: return
-        if (OpenVoxDeclarationKind.of(owner) !in setOf(OpenVoxDeclarationKind.CLASS, OpenVoxDeclarationKind.DEFINE)) return
+        // Automatic parameter lookup only applies to classes, not defined types.
+        if (OpenVoxDeclarationKind.of(owner) != OpenVoxDeclarationKind.CLASS) return
         val key = "${owner.name}::${element.text.removePrefix("$")}"
         val project = element.project
         val manager = PsiManager.getInstance(project)
         val targets = FileBasedIndex.getInstance().getContainingFiles(OpenVoxHieraIndex.KEY, key, GlobalSearchScope.allScope(project))
             .asSequence()
-            .filter { "/data/" in it.path.replace('\\', '/') }
+            .filter { file -> file.path.replace('\\', '/').let { "/data/" in it || "/hieradata/" in it } }
             .take(20)
             .mapNotNull(manager::findFile)
             .toList()

@@ -103,5 +103,30 @@ object OpenVoxReferenceContext {
         return current.parent?.node?.elementType == T.INTERPOLATION
     }
 
+    /** Whether [element] is the title of a `class { 'name': }` resource body. */
+    fun isClassResourceTitle(element: PsiElement): Boolean {
+        val body = element.parent?.takeIf { it.node?.elementType == T.RESOURCE_BODY && it.firstChild === element }
+            ?: return false
+        val type = body.parent?.node?.findChildByType(T.RESOURCE_TYPE) ?: return false
+        return type.findChildByType(T.CLASS) != null
+    }
+
+    /** The class named by the `class { 'name': }` body that contains [element], if any. */
+    fun classResourceName(element: PsiElement): String? {
+        val body = generateSequence(element) { it.parent }.firstOrNull { it.node?.elementType == T.RESOURCE_BODY }
+            ?: return null
+        val title = body.firstChild?.takeIf(::isClassResourceTitle) ?: return null
+        return quotedClassName(title)
+    }
+
+    /** The class name inside a quoted string such as `'apache::mod'`, or null if it is not one. */
+    fun quotedClassName(element: PsiElement): String? {
+        val text = element.text
+        if (text.length < 3 || text.first() != text.last() || text.first() !in "'\"") return null
+        return text.substring(1, text.lastIndex).takeIf { CLASS_NAME.matches(it) }
+    }
+
+    private val CLASS_NAME = Regex("(?:::)?[a-z][\\w]*(?:::[a-z][\\w]*)*")
+
     val CLASS_CALLS = setOf("include", "require", "contain")
 }

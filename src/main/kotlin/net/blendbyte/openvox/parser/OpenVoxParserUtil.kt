@@ -6,7 +6,8 @@ import net.blendbyte.openvox.psi.OpenVoxTypes
 
 object OpenVoxParserUtil : GeneratedParserUtilBase() {
 
-    private val STATEMENT_CALLS = setOf(
+    /** Functions that may be called as statements without parentheses, e.g. `include apache`. */
+    val STATEMENT_CALLS = setOf(
         "require", "realize", "include", "contain", "tag",
         "debug", "info", "notice", "warning", "err",
         "fail", "import", "break", "next", "return",
