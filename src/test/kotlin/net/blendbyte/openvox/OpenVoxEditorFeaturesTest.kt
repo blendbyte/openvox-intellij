@@ -1,11 +1,13 @@
 package net.blendbyte.openvox
 
 import com.intellij.ide.structureView.TreeBasedStructureViewBuilder
+import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.util.Disposer
 import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import net.blendbyte.openvox.annotator.OpenVoxLintLayout
+import net.blendbyte.openvox.annotator.OpenVoxToolOutput
 import net.blendbyte.openvox.completion.OpenVoxDocumentationProvider
 import net.blendbyte.openvox.inspections.OpenVoxUnknownAttributeInspection
 import net.blendbyte.openvox.psi.OpenVoxNamedElement
@@ -106,8 +108,39 @@ class OpenVoxEditorFeaturesTest : BasePlatformTestCase() {
             val loose = root.resolve("scratch/test.pp")
             assertEquals("test.pp", OpenVoxLintLayout.of(loose).relativePath)
             assertEquals("manifest.pp", OpenVoxLintLayout.of(null).relativePath)
+            assertEquals("template.epp", OpenVoxLintLayout.of(null, "template.epp").relativePath)
         } finally {
             root.toFile().deleteRecursively()
         }
+    }
+
+    // Captured from OpenVox 9.2.1 and puppet-lint 4.
+    fun testToolOutputParsing() {
+        val esc = "\u001B"
+        val parser = "$esc[1;31mError: Could not parse for environment production: Syntax error at '}' " +
+            "(file: /tmp/openvox-1/manifests/init.pp, line: 10, column: 3)$esc[0m\n"
+        val parsed = OpenVoxToolOutput.parseValidate(parser).single()
+        assertEquals(10, parsed.line)
+        assertEquals(3, parsed.column)
+        assertEquals("Syntax error at '}'", parsed.message)
+
+        val epp = """
+            Error: Syntax error at '%>' (file: /tmp/a.epp, line: 4, column: 15)
+            Error: Syntax error at '
+            ' (file: /tmp/b.epp, line: 2, column: 17)
+            Error: Errors while validating epp
+            Error: Try 'puppet help epp validate' for usage
+        """.trimIndent()
+        val messages = OpenVoxToolOutput.parseValidate(epp)
+        assertEquals(listOf(4 to 15, 2 to 17), messages.map { it.line to it.column })
+        assertEquals("Syntax error at '\\n'", messages[1].message)
+
+        val lint = """
+            1:7:error:mod::ok not in autoload module layout
+            3:12:warning:indentation of => is not properly aligned (expected in column 13, but found it in column 12)
+        """.trimIndent()
+        val findings = OpenVoxToolOutput.parsePuppetLint(lint)
+        assertEquals(listOf(HighlightSeverity.ERROR, HighlightSeverity.WARNING), findings.map { it.severity })
+        assertTrue(findings[1].message.endsWith("found it in column 12)"))
     }
 }

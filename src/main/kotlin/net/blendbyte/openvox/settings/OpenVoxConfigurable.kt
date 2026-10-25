@@ -14,9 +14,9 @@ class OpenVoxConfigurable : BoundConfigurable("OpenVox / Puppet") {
         return panel {
             group("Validation") {
                 row {
-                    checkBox("Run puppet parser validate")
+                    checkBox("Run puppet parser validate and puppet epp validate")
                         .bindSelected(settings::runParserValidate)
-                        .comment("Reports the compiler's own syntax errors as you edit.")
+                        .comment("Reports the compiler's own syntax errors in manifests and EPP templates as you edit.")
                 }
                 row("Puppet executable:") {
                     textField()

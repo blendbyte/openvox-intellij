@@ -10,6 +10,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.diagnostic.ControlFlowException
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import net.blendbyte.openvox.EppLanguage
 import net.blendbyte.openvox.OpenVoxLanguage
 import net.blendbyte.openvox.settings.OpenVoxSettings
 import com.intellij.openapi.util.io.FileUtil
@@ -24,7 +25,7 @@ data class OpenVoxExternalMessage(
     val source: String,
 )
 
-data class OpenVoxAnnotatorInput(val text: String, val path: Path?)
+data class OpenVoxAnnotatorInput(val text: String, val path: Path?, val template: Boolean)
 
 /**
  * Where the unsaved copy is written and where puppet-lint runs. The copy keeps the file's path
@@ -33,8 +34,8 @@ data class OpenVoxAnnotatorInput(val text: String, val path: Path?)
  */
 internal data class OpenVoxLintLayout(val relativePath: String, val workDirectory: Path?) {
     companion object {
-        fun of(path: Path?): OpenVoxLintLayout {
-            val parent = path?.parent ?: return OpenVoxLintLayout("manifest.pp", null)
+        fun of(path: Path?, fallbackName: String = "manifest.pp"): OpenVoxLintLayout {
+            val parent = path?.parent ?: return OpenVoxLintLayout(fallbackName, null)
             val manifests = generateSequence(parent) { it.parent }.firstOrNull { it.fileName?.toString() == "manifests" }
             val moduleRoot = manifests?.parent ?: parent
             val relative = moduleRoot.relativize(path).joinToString("/")
@@ -49,12 +50,13 @@ class OpenVoxExternalAnnotator :
     ExternalAnnotator<OpenVoxAnnotatorInput, List<OpenVoxExternalMessage>>() {
 
     override fun collectInformation(file: PsiFile, editor: Editor, hasErrors: Boolean): OpenVoxAnnotatorInput? {
-        // Registered for OpenVox, which also reaches the EPP dialect; templates are not manifests.
-        if (hasErrors || file.language != OpenVoxLanguage) return null
+        // Registered for OpenVox, which also reaches the EPP dialect: templates get puppet epp validate only.
+        val template = file.language == EppLanguage
+        if (hasErrors || (file.language != OpenVoxLanguage && !template)) return null
         val settings = OpenVoxSettings.getInstance()
-        if (!settings.runParserValidate && !settings.runPuppetLint) return null
+        if (!settings.runParserValidate && (template || !settings.runPuppetLint)) return null
         val path = file.virtualFile?.let { it.fileSystem.getNioPath(it) }
-        return OpenVoxAnnotatorInput(editor.document.text, path)
+        return OpenVoxAnnotatorInput(editor.document.text, path, template)
     }
 
     override fun doAnnotate(collected: OpenVoxAnnotatorInput?): List<OpenVoxExternalMessage> {
@@ -62,9 +64,9 @@ class OpenVoxExternalAnnotator :
         val settings = OpenVoxSettings.getInstance()
 
         val puppet = if (settings.runParserValidate) settings.resolvedPuppet() else null
-        val lint = if (settings.runPuppetLint) settings.resolvedPuppetLint() else null
+        val lint = if (settings.runPuppetLint && !input.template) settings.resolvedPuppetLint() else null
         if (puppet == null && lint == null) return emptyList()
-        val layout = OpenVoxLintLayout.of(input.path)
+        val layout = OpenVoxLintLayout.of(input.path, if (input.template) "template.epp" else "manifest.pp")
         var directory: Path? = null
         return try {
             directory = Files.createTempDirectory("openvox-")
@@ -72,7 +74,7 @@ class OpenVoxExternalAnnotator :
             Files.createDirectories(copy.parent)
             Files.writeString(copy, input.text)
             buildList {
-                puppet?.let { addAll(runParserValidate(it, copy.toString())) }
+                puppet?.let { addAll(runValidate(it, if (input.template) "epp" else "parser", copy.toString())) }
                 lint?.let { addAll(runPuppetLint(it, copy.toString(), layout.workDirectory)) }
             }
         } catch (exception: Exception) {
@@ -101,39 +103,19 @@ class OpenVoxExternalAnnotator :
         return if (start >= lineEnd) TextRange(lineStart, lineEnd) else TextRange(start, lineEnd)
     }
 
-    private fun runParserValidate(executable: String, path: String): List<OpenVoxExternalMessage> {
-        val output = run(GeneralCommandLine(executable, "parser", "validate", path)) ?: return emptyList()
-        return VALIDATE_PATTERN.findAll(output).map { match ->
-            OpenVoxExternalMessage(
-                line = match.groupValues[2].toIntOrNull() ?: 1,
-                column = match.groupValues[3].toIntOrNull() ?: 1,
-                severity = HighlightSeverity.ERROR,
-                message = match.groupValues[1].trim(),
-                source = "puppet",
-            )
-        }.toList()
+    private fun runValidate(executable: String, subcommand: String, path: String): List<OpenVoxExternalMessage> {
+        val command = GeneralCommandLine(executable, subcommand, "validate", "--color=false", path)
+        return OpenVoxToolOutput.parseValidate(run(command) ?: return emptyList())
     }
 
     private fun runPuppetLint(executable: String, path: String, workDirectory: Path?): List<OpenVoxExternalMessage> {
         val command = GeneralCommandLine(
             executable,
             "--relative",
-            "--log-format", "%{line}:%{column}:%{kind}:%{message}",
+            "--log-format", OpenVoxToolOutput.LINT_FORMAT,
             path,
         ).withWorkDirectory(workDirectory?.toFile())
-        val output = run(command) ?: return emptyList()
-        return output.lineSequence().mapNotNull { line ->
-            val parts = line.split(':', limit = 4)
-            if (parts.size < 4) return@mapNotNull null
-            OpenVoxExternalMessage(
-                line = parts[0].trim().toIntOrNull() ?: return@mapNotNull null,
-                column = parts[1].trim().toIntOrNull() ?: 1,
-                severity = if (parts[2].trim().equals("error", ignoreCase = true)) HighlightSeverity.ERROR
-                else HighlightSeverity.WARNING,
-                message = parts[3].trim(),
-                source = "puppet-lint",
-            )
-        }.toList()
+        return OpenVoxToolOutput.parsePuppetLint(run(command) ?: return emptyList())
     }
 
     private fun run(command: GeneralCommandLine): String? = try {
@@ -146,7 +128,41 @@ class OpenVoxExternalAnnotator :
 
     private companion object {
         const val TIMEOUT_MS = 10_000
-
-        val VALIDATE_PATTERN = Regex("""Error:\s*(.+?)\s*\(file:[^,]+,\s*line:\s*(\d+),\s*column:\s*(\d+)\)""")
     }
+}
+
+/** Parses the output of puppet's validate subcommands and of puppet-lint. */
+internal object OpenVoxToolOutput {
+    const val LINT_FORMAT = "%{line}:%{column}:%{kind}:%{message}"
+
+    // A message can span lines (`Syntax error at '<newline>'`) but never runs into the next error.
+    private val VALIDATE_PATTERN =
+        Regex("""Error:\s*((?:(?!Error:)[\s\S])+?)\s*\(file:[^,]+,\s*line:\s*(\d+),\s*column:\s*(\d+)\)""")
+    private val ENVIRONMENT_PREFIX = Regex("""^Could not parse for environment [^:]+:\s*""")
+    private val ANSI_ESCAPE = Regex("""\u001B\[[0-9;]*m""")
+
+    fun parseValidate(output: String): List<OpenVoxExternalMessage> =
+        VALIDATE_PATTERN.findAll(output.replace(ANSI_ESCAPE, "")).map { match ->
+            OpenVoxExternalMessage(
+                line = match.groupValues[2].toIntOrNull() ?: 1,
+                column = match.groupValues[3].toIntOrNull() ?: 1,
+                severity = HighlightSeverity.ERROR,
+                message = match.groupValues[1].replace(ENVIRONMENT_PREFIX, "").replace("\n", "\\n").trim(),
+                source = "puppet",
+            )
+        }.toList()
+
+    fun parsePuppetLint(output: String): List<OpenVoxExternalMessage> =
+        output.lineSequence().mapNotNull { line ->
+            val parts = line.split(':', limit = 4)
+            if (parts.size < 4) return@mapNotNull null
+            OpenVoxExternalMessage(
+                line = parts[0].trim().toIntOrNull() ?: return@mapNotNull null,
+                column = parts[1].trim().toIntOrNull() ?: 1,
+                severity = if (parts[2].trim().equals("error", ignoreCase = true)) HighlightSeverity.ERROR
+                else HighlightSeverity.WARNING,
+                message = parts[3].trim(),
+                source = "puppet-lint",
+            )
+        }.toList()
 }

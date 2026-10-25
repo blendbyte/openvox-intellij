@@ -11,7 +11,7 @@ Language support for **OpenVox 8 and 9** and Puppet manifests (`.pp`) and Embedd
 - Inspections for unknown functions and attributes, unresolved variables, unused parameters, and legacy facts, with a structured-fact quick fix.
 - Navigation to module templates and files, including from inside a module repository such as `puppetlabs-apache`, and Hiera gutter links for matching class parameter keys in `data/` or `hieradata/` YAML files, including subdirectories.
 
-Optional `puppet parser validate` and `puppet-lint` checks run when their executables are available on PATH. puppet-lint runs with `--relative` from the nearest directory holding a `.puppet-lint.rc`, so project settings apply. Configure paths or disable the checks under **Settings → Tools → OpenVox / Puppet**. Point validation at your target OpenVox installation; the editor supports both versions without a language switch.
+Optional `puppet parser validate`, `puppet epp validate` (for templates) and `puppet-lint` checks run when their executables are available on PATH. puppet-lint runs with `--relative` from the nearest directory holding a `.puppet-lint.rc`, so project settings apply. Configure paths or disable the checks under **Settings → Tools → OpenVox / Puppet**. Point validation at your target OpenVox installation; the editor supports both versions without a language switch.
 
 If you installed an early build named **OpenVox and Puppet Language** (`net.blendbyte.openvox`), uninstall it and restart the IDE before installing **OpenVox Language** (`net.blendbyte.openvox-intellij`). The plugin ID changed, so the IDE treats these as separate plugins.
 
