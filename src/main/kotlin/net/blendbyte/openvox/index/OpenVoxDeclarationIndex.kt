@@ -42,7 +42,7 @@ class OpenVoxDeclarationIndex : ScalarIndexExtension<String>() {
 
     override fun getName(): ID<String, Void> = KEY
 
-    override fun getVersion(): Int = 2
+    override fun getVersion(): Int = 3
 
     override fun dependsOnFileContent(): Boolean = true
 

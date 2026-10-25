@@ -12,7 +12,15 @@ internal object OpenVoxInspectionSupport {
     val BUILT_IN_VARIABLES = setOf(
         "facts", "trusted", "server_facts", "environment", "title", "name",
         "module_name", "caller_module_name", "settings", "strict",
+        "servername", "serverip", "serverversion", "clientcert", "clientversion", "clientnoop",
+        "agent_specified_environment",
     )
+
+    /** Every fact is also a top-scope variable, so `$os['family']` is valid even if discouraged. */
+    private val FACT_ROOTS: Set<String> by lazy { OpenVoxKnowledge.facts.map { it.root }.toSet() }
+
+    fun isTopScopeVariable(name: String): Boolean =
+        name in BUILT_IN_VARIABLES || name in LEGACY_FACTS || name in FACT_ROOTS
 
     val LEGACY_FACTS = mapOf(
         "osfamily" to "facts['os']['family']",

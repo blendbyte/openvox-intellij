@@ -6,6 +6,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiRecursiveElementWalkingVisitor
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
+import net.blendbyte.openvox.index.OpenVoxDeclarationKind
 import net.blendbyte.openvox.psi.OpenVoxNamedElement
 import net.blendbyte.openvox.psi.OpenVoxTypes as T
 
@@ -30,8 +31,26 @@ object OpenVoxScope {
         for (scope in scopesAt(usage)) {
             if (topScope && scope !is PsiFile) continue
             declarationsIn(scope).byName[wanted]?.lastOrNull { it.textRange.endOffset <= usage.textOffset }?.let { return it }
+            if (!topScope && scope.node?.elementType == T.CLASS_DEFINITION) {
+                inherited(scope, wanted)?.let { return it }
+            }
         }
         return null
+    }
+
+    /** A class that inherits another sees the parent's variables, as in the params.pp pattern. */
+    private fun inherited(classDefinition: PsiElement, name: String): OpenVoxNamedElement? {
+        val visited = mutableSetOf(classDefinition)
+        var current = classDefinition
+        while (true) {
+            val parentName = current.node.findChildByType(T.INHERITS_CLAUSE)
+                ?.findChildByType(T.QUALIFIED_NAME)?.text ?: return null
+            val parent = OpenVoxResolver.find(current.project, OpenVoxDeclarationKind.CLASS, parentName)
+                .firstOrNull() ?: return null
+            if (!visited.add(parent)) return null
+            declarationsIn(parent).byName[name]?.lastOrNull()?.let { return it }
+            current = parent
+        }
     }
 
     fun declarationsVisibleFrom(usage: PsiElement): List<OpenVoxNamedElement> =

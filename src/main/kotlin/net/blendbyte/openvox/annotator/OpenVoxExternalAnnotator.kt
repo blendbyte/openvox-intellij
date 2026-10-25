@@ -10,6 +10,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.diagnostic.ControlFlowException
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import net.blendbyte.openvox.OpenVoxLanguage
 import net.blendbyte.openvox.settings.OpenVoxSettings
 import java.nio.file.Files
 
@@ -27,7 +28,8 @@ class OpenVoxExternalAnnotator :
     ExternalAnnotator<OpenVoxAnnotatorInput, List<OpenVoxExternalMessage>>() {
 
     override fun collectInformation(file: PsiFile, editor: Editor, hasErrors: Boolean): OpenVoxAnnotatorInput? {
-        if (hasErrors) return null
+        // Registered for OpenVox, which also reaches the EPP dialect; templates are not manifests.
+        if (hasErrors || file.language != OpenVoxLanguage) return null
         val settings = OpenVoxSettings.getInstance()
         if (!settings.runParserValidate && !settings.runPuppetLint) return null
         return OpenVoxAnnotatorInput(editor.document.text)

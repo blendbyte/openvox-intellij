@@ -99,15 +99,9 @@ import static net.blendbyte.openvox.psi.OpenVoxTypes.*;
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
   }
 
+  // The token is the whole header, e.g. @("END":json/L); the tag ends at the first ':' or '/'.
   private void queueHeredocTag() {
-    int i = zzMarkedPos;
-    int end = zzEndRead;
-    StringBuilder sb = new StringBuilder();
-    while (i < end && zzBuffer.charAt(i) != ')' && zzBuffer.charAt(i) != '\n') {
-      sb.append(zzBuffer.charAt(i));
-      i++;
-    }
-    String raw = sb.toString().trim();
+    String raw = yytext().subSequence(2, yylength() - 1).toString().trim();
     int cut = raw.length();
     int slash = raw.indexOf('/');
     int colon = raw.indexOf(':');
@@ -240,7 +234,7 @@ REGEX_R        = "/" ( [^/\\\r\n] | \\ [^\r\n] )* "/"
   "plan"                    { return tok(PLAN); }
   "apply"                   { return tok(APPLY); }
 
-  "@("                      { queueHeredocTag(); return tok(HD_TAG); }
+  "@(" [^)\r\n]* ")"        { queueHeredocTag(); return tok(HD_TAG); }
 
   "\""                      { yybegin(DQ); return tok(DQ_START); }
   {SQ_STRING_R}             { return tok(SQ_STRING); }

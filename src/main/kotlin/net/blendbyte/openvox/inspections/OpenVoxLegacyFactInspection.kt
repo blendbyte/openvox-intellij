@@ -41,10 +41,13 @@ private class UseStructuredFactFix(private val replacement: String) : LocalQuick
 
     override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
         val element = descriptor.psiElement ?: return
-        val file = OpenVoxElementFactory.createFile(project, "\$x = \$$replacement")
+        // "$osfamily" only interpolates a bare name, so inside a string the access needs ${...}.
+        val inString = element.parent?.node?.elementType == T.DQ_STRING
+        val source = if (inString) "\"\${$replacement}\"" else "\$$replacement"
+        val file = OpenVoxElementFactory.createFile(project, "\$x = $source")
         val assignment = PsiTreeUtil.findChildrenOfType(file, PsiElement::class.java)
             .firstOrNull { it.node?.elementType == T.ASSIGN_EXPR } ?: return
         val value = assignment.lastChild ?: return
-        element.replace(value)
+        element.replace(if (inString) value.node.findChildByType(T.INTERPOLATION)?.psi ?: return else value)
     }
 }

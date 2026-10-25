@@ -85,4 +85,17 @@ class OpenVoxResolveTest : BasePlatformTestCase() {
         assertContainsElements(classes, "apache")
         assertContainsElements(defines, "apache::vhost")
     }
+
+    fun testPlansAndNodesAreIndexed() {
+        myFixture.addFileToProject("demo/plans/deploy.pp", "plan demo::deploy() { }")
+        myFixture.addFileToProject("manifests/site.pp", "node 'web01.example.com' { }")
+        assertEquals(1, OpenVoxResolver.find(project, OpenVoxDeclarationKind.PLAN, "demo::deploy").size)
+        assertEquals("web01.example.com", OpenVoxResolver.find(project, OpenVoxDeclarationKind.NODE, "web01.example.com").single().name)
+    }
+
+    fun testInheritedClassVariableResolves() {
+        myFixture.addFileToProject("demo/manifests/params.pp", "class demo::params {\n  \$port = 80\n}")
+        myFixture.configureByText("init.pp", "class demo inherits demo::params {\n  notice(\$po<caret>rt)\n}")
+        assertEquals("port", resolveAtCaret()?.name)
+    }
 }

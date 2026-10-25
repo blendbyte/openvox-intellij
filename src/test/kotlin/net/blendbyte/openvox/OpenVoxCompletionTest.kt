@@ -71,4 +71,11 @@ class OpenVoxCompletionTest : BasePlatformTestCase() {
         )
         assertOffers(items, "\$greeting", "\$target")
     }
+
+    fun testEppCompletionRunsOnce() {
+        myFixture.configureByText("t.epp", "<%- | String ${'$'}greeting | -%>\n<%= spl<caret> %>\n")
+        myFixture.completeBasic()
+        val items = myFixture.lookupElementStrings
+        if (items == null) assertTrue(myFixture.file.text.contains("split")) else assertEquals(1, items.count { it == "split" })
+    }
 }

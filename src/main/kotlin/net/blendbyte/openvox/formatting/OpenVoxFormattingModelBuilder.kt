@@ -43,11 +43,13 @@ private val BINARY_OPERATORS = TokenSet.create(
 
 internal fun createSpacingBuilder(settings: CodeStyleSettings): SpacingBuilder {
     val openVox = settings.getCustomSettings(OpenVoxCodeStyleSettings::class.java)
+    // The first matching rule wins, so unary operators must come before the binary ones.
     return SpacingBuilder(settings, OpenVoxLanguage)
-        .around(BINARY_OPERATORS).spaces(1)
         .afterInside(T.NOT, T.NOT_EXPR).none()
         .afterInside(T.MINUS, T.NEGATION_EXPR).none()
         .afterInside(T.TIMES, T.SPLAT_EXPR).none()
+        .afterInside(T.TIMES, T.PARAMETER).none()
+        .around(BINARY_OPERATORS).spaces(1)
         .before(T.COMMA).none()
         .after(T.COMMA).spaces(1)
         .before(T.SEMIC).none()

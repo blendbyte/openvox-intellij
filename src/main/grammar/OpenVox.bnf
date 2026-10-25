@@ -86,7 +86,11 @@ define_definition ::= DEFINE qualified_name parameter_list? block {
   implements="net.blendbyte.openvox.psi.OpenVoxNamedElement"
 }
 
-node_definition ::= NODE node_matcher (COMMA node_matcher)* block { pin=1 }
+node_definition ::= NODE node_matcher (COMMA node_matcher)* block {
+  pin=1
+  mixin="net.blendbyte.openvox.psi.impl.OpenVoxNamedElementImpl"
+  implements="net.blendbyte.openvox.psi.OpenVoxNamedElement"
+}
 private node_matcher ::= DEFAULT | REGEX | qualified_name | SQ_STRING | dq_string | NUMBER
 
 function_definition ::= FUNCTION qualified_name parameter_list? return_type? block {
@@ -103,7 +107,11 @@ type_alias ::= TYPE data_type EQUALS expr {
   implements="net.blendbyte.openvox.psi.OpenVoxNamedElement"
 }
 
-plan_definition ::= PLAN qualified_name parameter_list? block { pin=1 }
+plan_definition ::= PLAN qualified_name parameter_list? block {
+  pin=1
+  mixin="net.blendbyte.openvox.psi.impl.OpenVoxNamedElementImpl"
+  implements="net.blendbyte.openvox.psi.OpenVoxNamedElement"
+}
 
 block ::= LBRACE statement * RBRACE { pin=1 }
 
@@ -218,7 +226,7 @@ literal_expr ::= NUMBER | TRUE | FALSE | UNDEF | DEFAULT | REGEX | SQ_STRING
 dq_string ::= DQ_START (DQ_TEXT | DQ_ESCAPE | interpolation | variable_expr)* DQ_END { pin=1 }
 interpolation ::= INTERP_START (expr | keyword_as_name)? INTERP_END { pin=1 }
 
-heredoc ::= HD_TAG (expr (COMMA expr)*)? RPAREN { pin=1 }
+heredoc ::= HD_TAG
 
 variable_expr ::= VARIABLE {
   mixin="net.blendbyte.openvox.psi.impl.OpenVoxVariableMixin"

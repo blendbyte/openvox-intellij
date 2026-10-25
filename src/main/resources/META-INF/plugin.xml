@@ -55,7 +55,6 @@
 
         <colorSettingsPage implementation="net.blendbyte.openvox.highlighting.OpenVoxColorSettingsPage"/>
         <lang.foldingBuilder language="OpenVox" implementationClass="net.blendbyte.openvox.editor.OpenVoxFoldingBuilder"/>
-        <lang.foldingBuilder language="EPP" implementationClass="net.blendbyte.openvox.editor.OpenVoxFoldingBuilder"/>
         <lang.quoteHandler language="OpenVox" implementationClass="net.blendbyte.openvox.editor.OpenVoxQuoteHandler"/>
         <lang.psiStructureViewFactory language="OpenVox"
                                       implementationClass="net.blendbyte.openvox.structure.OpenVoxStructureViewFactory"/>
@@ -67,8 +66,6 @@
         <fileBasedIndex implementation="net.blendbyte.openvox.index.OpenVoxRubyFunctionIndex"/>
         <psi.referenceContributor language="OpenVox"
                                   implementation="net.blendbyte.openvox.resolve.OpenVoxReferenceContributor"/>
-        <psi.referenceContributor language="EPP"
-                                  implementation="net.blendbyte.openvox.resolve.OpenVoxReferenceContributor"/>
         <lang.findUsagesProvider language="OpenVox"
                                  implementationClass="net.blendbyte.openvox.resolve.OpenVoxFindUsagesProvider"/>
         <referencesSearch implementation="net.blendbyte.openvox.resolve.OpenVoxReferenceSearcher"/>
@@ -76,11 +73,7 @@
         <gotoSymbolContributor implementation="net.blendbyte.openvox.resolve.OpenVoxGotoSymbolContributor"/>
         <completion.contributor language="OpenVox"
                                 implementationClass="net.blendbyte.openvox.completion.OpenVoxCompletionContributor"/>
-        <completion.contributor language="EPP"
-                                implementationClass="net.blendbyte.openvox.completion.OpenVoxCompletionContributor"/>
         <lang.documentationProvider language="OpenVox"
-                                    implementationClass="net.blendbyte.openvox.completion.OpenVoxDocumentationProvider"/>
-        <lang.documentationProvider language="EPP"
                                     implementationClass="net.blendbyte.openvox.completion.OpenVoxDocumentationProvider"/>
         <psi.referenceContributor language="OpenVox"
                                   implementation="net.blendbyte.openvox.project.OpenVoxProjectReferenceContributor"/>

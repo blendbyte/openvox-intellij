@@ -104,4 +104,44 @@ class OpenVoxInspectionTest : BasePlatformTestCase() {
         )
         myFixture.checkHighlighting()
     }
+
+    fun testLegacyFactFixInsideStringUsesBraces() {
+        myFixture.enableInspections(OpenVoxLegacyFactInspection())
+        myFixture.configureByText("site.pp", "\$x = \"os: \$osfamily\"\n")
+        val fix = myFixture.getAllQuickFixes().first { it.text.contains("facts['os']['family']") }
+        myFixture.launchAction(fix)
+        assertEquals("\$x = \"os: \${facts['os']['family']}\"\n", myFixture.file.text)
+    }
+
+    fun testUnresolvedVariableAcceptsCapturesFactsAndInheritance() {
+        myFixture.addFileToProject("demo/manifests/params.pp", "class demo::params {\n  \$port = 80\n}")
+        myFixture.enableInspections(OpenVoxUnresolvedVariableInspection())
+        myFixture.configureByText(
+            "init.pp",
+            "class demo inherits demo::params {\n  if \$facts['x'] =~ /^(\\d+)/ { notice(\$1) }\n  notice(\$os['family'], \$port)\n}\n",
+        )
+        myFixture.checkHighlighting()
+    }
+
+    fun testUnresolvedVariableSkipsTemplatesWithoutParameterTag() {
+        myFixture.enableInspections(OpenVoxUnresolvedVariableInspection())
+        myFixture.configureByText("plain.epp", "Port <%= \$port %>\n")
+        myFixture.checkHighlighting()
+        myFixture.configureByText(
+            "typed.epp",
+            "<%- | Integer \$port | -%>\n<%= <warning descr=\"Variable '\$host' is not declared in this scope\">\$host</warning> %>:<%= \$port %>\n",
+        )
+        myFixture.checkHighlighting()
+    }
+
+    fun testUnusedParameterAllowsErbHeredocAndUnderscore() {
+        myFixture.enableInspections(OpenVoxUnusedParameterInspection())
+        myFixture.configureByText(
+            "site.pp",
+            "define erb (Integer \$port) {\n  file { '/x': content => template('demo/x.erb') }\n}\n" +
+                "define doc (String \$who) {\n  \$x = @(\"END\")\n    Hello \${who}\n    END\n  notify { \$x: }\n}\n" +
+                "\$h.each |\$_key, \$value| { notice(\$value) }\n",
+        )
+        myFixture.checkHighlighting()
+    }
 }

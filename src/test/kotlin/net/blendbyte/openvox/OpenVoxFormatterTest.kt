@@ -81,4 +81,12 @@ class OpenVoxFormatterTest : BasePlatformTestCase() {
             result,
         )
     }
+
+    fun testUnaryOperatorsKeepTheirOperand() {
+        assertEquals("\$a = -1\n\$b = !\$c\n", reformat("\$a = - 1\n\$b = ! \$c\n"))
+        assertEquals(
+            "function demo::f (String *\$args) { notice(*\$args) }\n",
+            reformat("function demo::f (String * \$args) { notice(* \$args) }\n"),
+        )
+    }
 }

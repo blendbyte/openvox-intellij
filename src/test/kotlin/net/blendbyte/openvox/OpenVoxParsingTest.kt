@@ -112,4 +112,17 @@ class OpenVoxParsingTest : ParsingTestCase("", "pp", OpenVoxParserDefinition(), 
         """.trimIndent()
     )
 
+    fun testHeredocWithFormatAndEscapes() = assertParses(
+        "heredoc_format", """
+        class h {
+          ${'$'}json = @(END:json/L)
+            {}
+            END
+          ${'$'}text = @("END"/${'$'}t)
+            hello
+            | END
+          notify { 'x': message => "${'$'}json ${'$'}text" }
+        }
+        """.trimIndent()
+    )
 }

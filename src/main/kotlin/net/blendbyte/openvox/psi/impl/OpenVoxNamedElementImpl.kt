@@ -20,7 +20,14 @@ abstract class OpenVoxNamedElementImpl(node: ASTNode) : OpenVoxPsiElement(node),
         }
     }
 
-    override fun getName(): String? = nameIdentifier?.text?.removePrefix("$")
+    override fun getName(): String? {
+        val identifier = nameIdentifier ?: return null
+        return when (identifier.node.elementType) {
+            T.VARIABLE -> identifier.text.removePrefix("$")
+            T.SQ_STRING -> identifier.text.removeSurrounding("'")
+            else -> identifier.text
+        }
+    }
 
     override fun setName(name: String): PsiElement {
         val identifier = nameIdentifier ?: throw IncorrectOperationException("This declaration has no name to change")
