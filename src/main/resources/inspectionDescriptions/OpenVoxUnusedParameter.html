@@ -1,3 +1,3 @@
 <html><body>
-Reports a parameter of a defined type, function, plan or lambda that is never read. Class parameters are not reported, because another class may read them by their qualified name.
+Reports a parameter of a defined type, function, plan or lambda that is never read. Class parameters are not reported, because another class or an <code>epp()</code> template may read them by their qualified name. Parameters are also treated as used when the body renders an ERB template or calls <code>inline_epp</code>, since those read the calling scope directly.
 </body></html>

@@ -144,4 +144,18 @@ class OpenVoxInspectionTest : BasePlatformTestCase() {
         )
         myFixture.checkHighlighting()
     }
+
+    fun testUnusedParameterTemplateScoping() {
+        myFixture.enableInspections(OpenVoxUnusedParameterInspection())
+        myFixture.configureByText(
+            "site.pp",
+            // Class parameters are public: an epp() template reads them as \$mod::port.
+            "class mod (Integer \$port) {\n  file { '/x': content => epp('mod/x.epp') }\n}\n" +
+                "define inline (Integer \$port) {\n  notify { inline_epp('<%= \$port %>'): }\n}\n" +
+                // A defined type has no qualified name, so an epp() file without arguments cannot see its parameters.
+                "define file_tpl (Integer <warning descr=\"Parameter '\$port' is never used\">\$port</warning>) {\n" +
+                "  file { '/y': content => epp('mod/y.epp') }\n}\n",
+        )
+        myFixture.checkHighlighting()
+    }
 }

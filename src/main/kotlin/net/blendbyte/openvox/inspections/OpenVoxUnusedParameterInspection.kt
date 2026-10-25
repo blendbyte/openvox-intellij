@@ -13,7 +13,8 @@ import net.blendbyte.openvox.psi.OpenVoxTypes as T
 class OpenVoxUnusedParameterInspection : LocalInspectionTool() {
 
     private val LOCAL_SCOPES = setOf(T.DEFINE_DEFINITION, T.FUNCTION_DEFINITION, T.LAMBDA, T.PLAN_DEFINITION)
-    private val ERB_FUNCTIONS = setOf("template", "inline_template")
+    // epp() is not here: a template file sees only its own parameters and qualified names.
+    private val SCOPE_READING_TEMPLATES = setOf("template", "inline_template", "inline_epp")
 
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
         object : PsiElementVisitor() {
@@ -32,7 +33,7 @@ class OpenVoxUnusedParameterInspection : LocalInspectionTool() {
                         OpenVoxScope.normalise(candidate.text) == name && OpenVoxScope.resolve(candidate, name) === element
                 }
                 if (used) return
-                if (descendants.any(::rendersErb)) return
+                if (descendants.any(::rendersCallingScope)) return
                 if (usedInHeredoc(owner, name)) return
 
                 holder.registerProblem(
@@ -43,11 +44,11 @@ class OpenVoxUnusedParameterInspection : LocalInspectionTool() {
             }
         }
 
-    /** ERB templates read every variable in the calling scope, so their use cannot be seen here. */
-    private fun rendersErb(element: PsiElement): Boolean {
+    /** ERB and inline EPP templates read every variable in the calling scope, so their use cannot be seen here. */
+    private fun rendersCallingScope(element: PsiElement): Boolean {
         val type = element.node?.elementType
         if (type != T.FUNCTION_CALL_EXPR && type != T.BARE_FUNCTION_CALL) return false
-        return element.firstChild?.text in ERB_FUNCTIONS
+        return element.firstChild?.text in SCOPE_READING_TEMPLATES
     }
 
     /** Heredoc bodies are not parsed, so look for an interpolation of the name in their text. */
